@@ -41,7 +41,25 @@
     - [`this`](#this)
       - [When is this Assigned?**](#when-is-this-assigned)
       - [What Does this Get Set To?](#what-does-this-get-set-to)
+    - [Setting our own `this`](#setting-our-own-this)
+      - [More Ways to Invoke Functions](#more-ways-to-invoke-functions)
+        - [`call()`](#call)
+        - [`apply()`](#apply)
+        - [`call()` vs `apply()`](#call-vs-apply)
+      - [Saving this with an Anonymous Closure](#saving-this-with-an-anonymous-closure)
+        - [Saving `this` with an Anonymous Closure](#saving-this-with-an-anonymous-closure-1)
+        - [Saving `this` with `bind`](#saving-this-with-bind)
+    - [Prototypical Inheritance](#prototypical-inheritance)
+      - [Adding methods to the Prototype](#adding-methods-to-the-prototype)
+        - [Finding Properties and Methods on the Prototype Chain](#finding-properties-and-methods-on-the-prototype-chain)
+      - [Replacing the `prototype` Object](#replacing-the-prototype-object)
+      - [Checking an Object's Properties](#checking-an-objects-properties)
+        - [hasOwnProperty()](#hasownproperty)
+        - [isPrototypeOf()](#isprototypeof)
+        - [Object.getPrototypeOf()](#objectgetprototypeof)
+        - [The `constructor` Property](#the-constructor-property)
   - [OOP Summary](#oop-summary)
+  - [MISC](#misc)
 
 ## OOP
 
@@ -637,7 +655,423 @@ The fourth way to call functions allows us to set this ourselves!
 
 
 
+#### Setting our own `this`
+
+Recall that functions, objects, and `the` this keyword are all interconnected. Whether you're invoking a constructor function with the `new` operator, invoking a method on an object, or simply invoking a function normally -- each form of invocation sets the value of `this` a bit differently.
+
+##### More Ways to Invoke Functions
+
+We've seen various ways to invoke functions, each with their own implications regarding the value of `this`. There are yet two more ways to invoke a function: 
+- `call()`  
+- `apply()`
+
+###### `call()`
+`call()` is a method directly invoked onto a function. We **first pass into it a single value** to set as the value of `this`; then we pass in any of the receiving function's arguments one-by-one, separated by commas.
+
+
+```js
+function multiply(n1, n2) {
+  return n1 * n2;
+}
+```
+let's use the call() method to invoke the same function:
+
+```js
+multiply.call(window, 3, 4);
+// 12
+```
+
+> `call()` will be handling the invocation and the multiply() function's arguments itself!
+
+Along with invoking regular functions, how do we go upon invoking functions attached to objects (i.e., methods)? This is where the power of `call()` really shines. Using `call()` to invoke a method allows us to "borrow" a method from one object -- then use it for another object! Check out the following object, `mockingbird`:
+
+```js
+const mockingbird = {
+  title: 'To Kill a Mockingbird',
+  describe: function () {
+    console.log(`${this.title} is a classic novel`);
+  }
+};
+```
+
+Using `call()`, however, the following `pride` object can utilize `mockingbird`'s `describe()` method:
+
+```js
+const pride = {
+  title: 'Pride and Prejudice'
+};
+
+mockingbird.describe.call(pride);
+// 'Pride and Prejudice is a classic novel'
+```
+
+First, the `call()` method is invoked onto `mockingbird.describe` (which points to a function). Then, the value of `this` is passed into the `call()` method: `pride`.
+
+Since `mockingbird`'s `describe()` method references `this.title`, we need to access the title property of the object that `this` refers to.
+
+###### `apply()`
+
+Just like `call()`, the `apply()` method is called on a function to not only invoke that function, but also to associate with it a specific value of `this`. However, rather than passing arguments one-by-one, separated by commas -- `apply()` takes the function's arguments in an array.
+
+
+```js
+multiply.apply(window, [3, 4]);
+// 12
+```
+
+**Now what about invoking an object's method with apply()?**    
+```js
+const mockingbird = {
+  title: 'To Kill a Mockingbird',
+  describe: function () {
+    console.log(`${this.title} is a classic novel`);
+  }
+};
+
+
+const pride = {
+  title: 'Pride and Prejudice'
+};
+```
+
+Previously, we used `call()` to allow the pride object to "borrow" `mockingbird`'s `describe()` method:
+
+```js
+mockingbird.describe.call(pride);
+
+// 'Pride and Prejudice is a classic novel'
+```
+
+We can achieve the same result using `apply()`!
+
+```js
+mockingbird.describe.apply(pride);
+// 'Pride and Prejudice is a classic novel'
+```
+
+###### `call()` vs `apply()`
+
+`call()` may be limited if you don't know ahead of time the number of arguments that the function needs. In this case, `apply()` would be a better option, since it simply takes an array of arguments, then unpacks them to pass along to the function. Keep in mind that the unpacking comes at a minor performance cost, but it shouldn't be much of an issue.
+
+##### Saving this with an Anonymous Closure
+
+```js
+function invokeTwice(cb) {
+   cb();
+   cb();
+}
+
+const dog = {
+  age: 5,
+  growOneYear: function () {
+    this.age += 1;
+  }
+};
+
+```
+
+```js
+dog.growOneYear();
+
+dog.age; 
+// 6
+```
+
+However, passing `dog.growOneYear` (a function) as an argument into `invokeTwice()` produces an odd result:
+
+```js
+invokeTwice(dog.growOneYear);
+
+dog.age;
+// 6
+```
+
+> `invokeTwice()` does indeed invoke `growOneYear` -- but it is invoked as a **function** rather than a **method**
+
+###### Saving `this` with an Anonymous Closure
+
+> simply invoking a normal function will set the value of `this` to the global object (i.e., `window`). This is an issue, because we want this to be the `dog` object!
+
+One way to resolve this issue is to use an `anonymous closure` to close over the `dog` object:
+
+```js
+invokeTwice(function () { 
+  dog.growOneYear(); 
+});
+
+dog.age;
+// 7
+```
+
+Using this approach, invoking `invokeTwice()` still sets the value of `this` to `window`. However, this has no effect on the closure; within the anonymous function, the `growOneYear()` method will still be directly called onto the `dog` object! As a result, the value of `dog`'s `age` property increases from `5` to `7`.
+
+Since this is such a common pattern, JavaScript provides an alternate and less verbose approach: the `bind()` method.
+
+###### Saving `this` with `bind`
+
+```js
+
+ 
+function invokeTwice(cb) {
+   cb();
+   cb();
+}
+
+const dog = {
+  age: 5,
+  growOneYear: function () {
+    this.age += 1;
+  }
+};
+
+const myGrow = dog.growOneYear.bind(dog);
+
+dog.age;
+// 7
+```
+
+#### Prototypical Inheritance
+
+##### Adding methods to the Prototype
+
+```js
+function Cat(name) {
+ this.lives = 9;
+ this.name = name;
+
+ this.sayName = function () {
+   console.log(`Meow! My name is ${this.name}`);
+ };
+}
+```
+
+This way, a `sayName` method gets added to all `Cat` objects by saving a function to the `sayName` attribute of newly-created `Cat` objects.
+
+This works just fine, but what if we want to instantiate more and more `Cat` objects with this constructor? You'll create a new function every single time for that `Cat` object's `sayName`! What's more: if you ever want to make changes to the method, you'll have to update all objects individually. In this situation, it makes sense to have all objects created by the same `Cat` constructor function just share a single `sayName` method.
+
+
+To **save memory** and keep things DRY, we can add methods to the constructor function's `prototype` property. The prototype is just an object, and all objects created by a constructor function keep a reference to the `prototype`. Those objects can even use the prototype's properties as their own!
+
+![prototypical_inheritance](snippets/2.png)
+
+Recall that each function has a `prototype` property, which is really just an object. When this function is invoked as a constructor using the `new` operator, it creates and returns a new object. This object is secretly linked to its constructor's `prototype`, and this secret link allows the object to access the `prototype`'s properties and methods as if it were its own!
+
+Since we know that the `prototype` property just points to a regular object, that object itself also has a secret link to its prototype. And that prototype object also has reference to its own prototype -- and so on. This is how the **prototype chain** is formed.
+
+###### Finding Properties and Methods on the Prototype Chain
+
+Whether you're accessing a property (e.g., `bailey.lives`;) or invoking a method (e.g., `bailey.meow()`;), the JavaScript interpreter looks for them along the prototype chain in a very particular order:
+
+1. First, the JavaScript engine will look at the object's own properties. This means that any properties and methods defined directly in the object itself will take precedence over any properties and methods elsewhere if their names are the same (similar to variable shadowing in the scope chain).
+2. If it doesn't find the property in question, it will then search the object's constructor's prototype for a match.
+3. If the property doesn't exist in the prototype, the JavaScript engine will continue looking up the chain.
+4. At the very end of the chain is the `Object()` object, or the top-level parent. If the property still cannot be found, the property is undefined.
+
+Previously, we simply defined methods directly in a constructor function itself. Let's see how things look if we defined methods in the constructor's prototype instead!
+
+
+```js
+function Dog(age, weight, name) {
+  this.age = age;
+  this.weight = weight;
+  this.name = name;
+}
+
+Dog.prototype.bark = function () {
+    console.log(`${this.name} says woof!`);
+};
+
+dog1 = new Dog(2, 60, 'Java');
+dog2 = new Dog(4, 55, 'Jodi');
+
+dog1.bark();
+// Java says woof!
+
+dog2.bark();
+// Jodi says woof!
+
+```
+
+##### Replacing the `prototype` Object 
+
+What happens if you completely replace a function's `prototype` object? How does this affect objects created by that function? Let's look at a simple `Hamster` constructor function and instantiate a few objects:
+
+```js
+function Hamster() {
+  this.hasFur = true;
+}
+
+let waffle = new Hamster();
+let pancake = new Hamster();
+```
+
+First, note that even after we make the new objects, `waffle` and `pancake`, we can still add properties to `Hamster`'s prototype and it will still be able to access those new properties.
+
+```js
+Hamster.prototype.eat = function () {
+  console.log('Chomp chomp chomp!');
+};
+
+waffle.eat();
+// 'Chomp chomp chomp!'
+
+pancake.eat();
+// 'Chomp chomp chomp!'
+```
+
+Now, let's replace `Hamster`'s `prototype` object with something else entirely:
+
+```js
+Hamster.prototype = {
+  isHungry: false,
+  color: 'brown'
+};
+```
+
+The previous objects don't have access to the updated prototype's properties; they just retain their secret link to the old prototype:
+
+```js
+console.log(waffle.color);
+// undefined
+
+waffle.eat();
+// 'Chomp chomp chomp!'
+
+console.log(pancake.isHungry);
+// undefined
+```
+
+As it turns out, any new `Hamster` objects created moving forward will use the updated prototype:
+
+```js
+const muffin = new Hamster();
+
+muffin.eat();
+// TypeError: muffin.eat is not a function
+
+console.log(muffin.isHungry);
+// false
+
+console.log(muffin.color);
+// 'brown'
+```
+
+##### Checking an Object's Properties
+As we've just seen, if an object doesn't have a particular property of its own, it can access one somewhere along the prototype chain (assuming it exists, of course). With so many options, it can sometimes get tricky to tell just where a particular property is coming from! Here are a few useful methods to help you along the way.
+
+###### hasOwnProperty()
+
+`hasOwnProperty()` allows you to find the origin of a particular property. Upon passing in a string of the property name you're looking for, the method will return a boolean indicating whether or not the property belongs to the object itself (i.e., that property was not inherited). Consider the `Phone` constructor with a single property defined directly in the function, and another property on its prototype object:
+
+```js
+function Phone() {
+  this.operatingSystem = 'Android';
+}
+
+Phone.prototype.screenSize = 6;
+```
+
+Let's now create a new object, `myPhone`, and check whether `operatingSystem` is its own property, meaning that it was not inherited from its prototype (or somewhere else along the prototype chain):
+
+```js
+const myPhone = new Phone();
+const own = myPhone.hasOwnProperty('operatingSystem');
+
+console.log(own);
+// true
+```
+Indeed it returns true! What about the `screenSize` property, which exists on `Phone` objects' `prototype`?
+
+```js
+const inherited = myPhone.hasOwnProperty('screenSize');
+console.log(inherited);
+// false
+```
+
+Using `hasOwnProperty()`, we gain insight a certain property's origins.
+
+
+###### isPrototypeOf()
+Objects also have access to the `isPrototypeOf()` method, which checks whether or not an object exists in another object's prototype chain. Using this method, you can confirm if a particular object serves as the prototype of another object. Check out the following `rodent` object:
+
+```js
+const rodent = {
+  favoriteFood: 'cheese',
+  hasTail: true
+};
+```
+
+Let's now build a `Mouse()` constructor function, and assign its `prototype` to `rodent`:
+
+```js
+function Mouse() {
+  this.favoriteFood = 'cheese';
+}
+Mouse.prototype = rodent;
+```
+
+If we create a new `Mouse` object, its prototype should be the `rodent` object. Let's confirm:
+
+```js
+const ralph = new Mouse();
+const result = rodent.isPrototypeOf(ralph);
+
+console.log(result);
+// true
+```
+
+Great! `isPrototypeOf()` is a great way to confirm if an object exists in another object's prototype chain.
+
+###### Object.getPrototypeOf()
+`isPrototypeOf()` works well, but keep in mind that in order to use it, you must have that prototype object at hand in the first place! What if you're not sure what a certain object's prototype is? `Object.getPrototypeOf()` can help with just that!
+
+Using the previous example, let's store the return value of `Object.getPrototypeOf()` in a variable, `myPrototype`, then check what it is:
+
+```js
+const myPrototype = Object.getPrototypeOf(ralph);
+console.log(myPrototype);
+// { favoriteFood: 'cheese', hasTail: true }
+```
+
+Great! The prototype of `ralph` has the same properties as the result because they are the same object. `Object.getPrototypeOf()` is great for retrieving the prototype of a given object.
+
+###### The `constructor` Property
+Each time an object is created, a special property is assigned to it under the hood: `constructor`. Accessing an object's `constructor` property returns a reference to the `constructor` function that created that object in the first place! Here's a simple Longboard `constructor` function. We'll also go ahead and make a new object, then save it to a `board` variable:
+
+```js
+function Longboard() {
+  this.material = 'bamboo';
+}
+
+const board = new Longboard();
+```
+
+If we access `board`'s `constructor` property, we should see the original constructor function itself:
+
+```js
+console.log(board.constructor);
+
+// function Longboard() {
+//   this.material = 'bamboo';
+// }
+```
+
+Excellent! Keep in mind that if an object was created using literal notation, its constructor is the built-in Object() constructor function!
+
+```js
+const rodent = {
+  favoriteFood: 'cheese',
+  hasTail: true
+};
+
+console.log(rodent.constructor);
+// function Object() { [native code] }
+```
+
 ### OOP Summary
 - Data within objects are mutable.
 - In JavaScript, a primitive (e.g., a string, number, boolean, etc.) is immutable and passes by value.
 - Objects are passed by reference.
+
+### MISC
+- prototype chain
