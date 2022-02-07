@@ -58,6 +58,11 @@
         - [isPrototypeOf()](#isprototypeof)
         - [Object.getPrototypeOf()](#objectgetprototypeof)
         - [The `constructor` Property](#the-constructor-property)
+    - [Prototypical Inheritance Subclass](#prototypical-inheritance-subclass)
+      - [Inheritance via Prototype](#inheritance-via-prototype)
+      - [The Secret Link](#the-secret-link)
+        - [What About Just Inheriting the Prototype?](#what-about-just-inheriting-the-prototype)
+        - [Object.create()](#objectcreate)
   - [OOP Summary](#oop-summary)
   - [MISC](#misc)
 
@@ -832,6 +837,8 @@ dog.age;
 
 #### Prototypical Inheritance
 
+> Every object is made via constructor function, every constructor function can have a prototype of its own (prototype is just scope/namespace), object made via a constructor can use that constructor functions prototype stuff.
+
 ##### Adding methods to the Prototype
 
 ```js
@@ -1067,6 +1074,147 @@ const rodent = {
 console.log(rodent.constructor);
 // function Object() { [native code] }
 ```
+
+#### Prototypical Inheritance Subclass
+
+##### Inheritance via Prototype
+When calling any property on any object, the JavaScript engine will first look for the property in the object itself (i.e., the object's own, non-inherited properties). If the property is not found, JavaScript will then look at the object's prototype. If the property still isn't found in the object's prototype, JavaScript will continue the search up the **prototype chain**.
+
+##### The Secret Link
+
+Again, inheritance in JavaScript is all about setting up this chain!
+
+As you know, an object's constructor function's prototype is first place searched when the JavaScript engine tries to access a property that doesn't exist in the object itself. Consider the following `bear` object with two properties, `claws` and `diet`:
+
+```js
+const bear = {
+  claws: true,
+  diet: 'carnivore'
+};
+```
+
+We'll assign the following `PolarBear()` constructor function's `prototype` property to `bear`:
+
+```js
+function PolarBear() { 
+  // ...
+}
+
+PolarBear.prototype = bear;
+```
+Let's now call the `PolarBear()` constructor to create a new object, then give it two properties:
+
+```js
+const snowball = new PolarBear();
+
+snowball.color = 'white';
+snowball.favoriteDrink = 'cola';
+```
+This is how the `snowball` object looks at this point:
+
+```js
+{
+  color: 'white',
+  favoriteDrink: 'cola'
+}
+```
+Note that `snowball` has just two properties of its own: `color` and `favoriteDrink`. However, `snowball` also has access to properties that don't exist inside it: `claws` and `diet`:
+
+```js
+console.log(snowball.claws);
+// true
+
+console.log(snowball.diet);
+// 'carnivore'
+```
+
+Since `claws` and `diet` both exist as properties in the `prototype` object, they are looked up because objects are secretly linked to their constructor's `prototype` property.
+
+Great! But you may be wondering: just what is this secret link that leads to the `prototype` object? Right after objects are made from the `PolarBear()` constructor (such as `snowball`), they have immediate access to properties in `PolarBear()`'s prototype. How exactly is this possible?
+
+As it turns out, the secret link is `snowball`'s `__proto__` property (note the two underscores on each end). `__proto__` is a property of all objects (i.e., instances) made by a constructor function, and points directly to that constructor's `prototype` object. Let's check out what it looks like!
+
+```js
+console.log(snowball.__proto__);
+// { claws: true, diet: 'carnivore' }
+```
+
+Since the `__proto__` property refers to the same object as `PolarBear`'s prototype, `bear`, comparing them returns `true`:
+
+```js
+console.log(snowball.__proto__ === bear);
+
+// true
+```
+
+**It is highly discouraged to reassign the `__proto__` property, or even use it in any code you write.**
+First, there are compatibility issues across browsers. What's more: since the JavaScript engine searches and accesses properties along the prototype chain, mutating an object's prototype can lead to performance issues. The MDN article for proto even warns against using this property in red text at the very top of the page!
+
+It's great to know the secret link for learning how functions and objects are interconnected, but you **should not use `__proto__` to manage inheritance**. 
+If you ever just need to review an object's prototype, you can still use `Object.getPrototypeOf()`.
+
+
+###### What About Just Inheriting the Prototype? 
+
+Let's say we want a `Child` object to inherit from a `Parent` object. Why shouldn't we just set `Child.prototype` = `Parent.prototype`?
+
+First, recall that objects are passed by reference. This means that since the `Child.prototype` object and the `Parent.prototype` object refer to the same object -- any changes you make to `Child`'s prototype will also be made to `Parent`'s prototype! We don't want children being able to modify properties of their parents!
+
+On top of all this, no prototype chain will be set up. What if we want an object to inherit from any object we want, not just its prototype?
+
+We still need a way to efficiently manage inheritance without mutating the prototype at all.
+
+###### Object.create()
+
+At this point, we've reached a few roadblocks when it comes to inheritance. First, even though `__proto__` can access the prototype of the object it is called on, using it in any code you write is not good practice.
+
+What's more: we also shouldn't inherit only the prototype; this doesn't set up the prototype chain, and any changes that we made to a child object will also be reflected in a parent object.
+
+So how should we move forward?
+
+There's actually a way for us to set up the prototype of an object ourselves: using `Object.create()`. And best of all, this approach lets us manage inheritance without altering the prototype!
+
+`Object.create()` takes in a single object as an argument, and returns a new object with its `__proto__` property set to what argument is passed into it. From that point, you simply set the returned object to be the prototype of the child object's constructor function. Let's check out an example!
+
+First, let's say we have a `mammal` object with two properties: `vertebrate` and `earBones`:
+
+```js
+const mammal = {
+  vertebrate: true,
+  earBones: 3
+};
+```
+Recall that `Object.create()` takes in a single object as an argument, and returns a new object. That new object's `__proto__` property is set to whatever was originally passed into `Object.create()`. Let's save that returned value to a variable, `rabbit`:
+
+```js
+const rabbit = Object.create(mammal);
+```
+
+We expect the new `rabbit` object to be blank, with no properties of its own:
+
+```js
+console.log(rabbit);
+// {}
+```
+
+However, `rabbit` should now be secretly linked to `mammal`. That is, its `__proto__` property should point to `mammal`:
+
+```js
+console.log(rabbit.__proto__ === mammal);
+// true
+```
+
+Great! This means that now, `rabbit` extends `mammal` (i.e., `rabbit` inherits from `mammal`). As a result, `rabbit` can access `mammal`'s properties as if it were its own!
+
+```js
+console.log(rabbit.vertebrate);
+// true
+
+console.log(rabbit.earBones);
+// 3
+```
+
+`Object.create()` gives us a clean method of establishing prototypal inheritance in JavaScript. We can easily extend the prototype chain this way, and we can have objects inherit from just about any object we want!
 
 ### OOP Summary
 - Data within objects are mutable.
