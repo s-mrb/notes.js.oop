@@ -425,7 +425,82 @@ displayPrice('80');
 
 #### Closure
 
-dentifier lookup and the scope chain are really powerful tools for a function to access identifiers in the code. In fact, this lets you do something really interesting: create a function now, package it up with some variables, and save it to run later. If you have five buttons on the screen, you could write five different click handler functions, or you could use the same code five times with different saved values.
+> **Case 1.** A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment).
+> **Case 2.** A Closure is a function having access to the parent scope, even after the parent function has closed. A Closure is created when we define a function not when it is executed.
+
+  **NOTE:**    
+  - lexical scope defines how variable names are resolved in nested functions.
+  - Nested (child) functions have access to the scope of their parent functions.
+  - This is often confused with closure, but lexical scope is only an important part of closure.
+
+
+
+**Case 1 Example:**    
+
+```js
+let x = 1
+const parentFunction = ()=>{
+
+  // local scope
+  let myValue = 2
+  console.log(x)
+  console.log(myValue)
+
+  const childFunction = ()=>{
+    console.log(x += 5)
+    console.log(myValue += 1)
+  }
+
+  childFunction()
+}
+
+  // output:
+  // 1
+  // 2
+  // 6
+  // 3
+parentFunction()
+
+```
+
+**Case 2 Example:**    
+
+```js
+let x = 1
+const parentFunction = ()=>{
+
+  // local scope
+  let myValue = 2
+  console.log(x)
+  console.log(myValue)
+
+  const childFunction = ()=>{
+    console.log(x += 5)
+    console.log(myValue += 1)
+  }
+
+  return childFunction
+}
+
+// output
+// 1
+// 2
+let childf = parentFunction()
+
+childf()
+// output
+// 6
+// 3
+
+
+childf()
+// output
+// 11
+// 4
+```
+
+
+Identifier lookup and the scope chain are really powerful tools for a function to access identifiers in the code. In fact, this lets you do something really interesting: create a function now, package it up with some variables, and save it to run later. If you have five buttons on the screen, you could write five different click handler functions, or you could use the same code five times with different saved values.
 
 > "closure is the combination of a function and the lexical environment within which that function was declared."
 In this case, the "lexical environment" refers the code as it was written in the JavaScript file. As such, a closure is:
