@@ -65,6 +65,7 @@
         - [Object.create()](#objectcreate)
   - [OOP Summary](#oop-summary)
   - [MISC](#misc)
+- [Remember](#remember)
 
 ## OOP
 
@@ -500,7 +501,7 @@ childf()
 ```
 
 
-Identifier lookup and the scope chain are really powerful tools for a function to access identifiers in the code. In fact, this lets you do something really interesting: create a function now, package it up with some variables, and save it to run later. If you have five buttons on the screen, you could write five different click handler functions, or you could use the same code five times with different saved values.
+Identifier lookup and the scope chain are really powerful tools for a function to access identifiers in the code. In fact, this lets you do something really interesting: create a function now, package it up with some variables, and save it to run later. **If you have five buttons on the screen, you could write five different click handler functions, or you could use the same code five times with different saved values.**
 
 > "closure is the combination of a function and the lexical environment within which that function was declared."
 In this case, the "lexical environment" refers the code as it was written in the JavaScript file. As such, a closure is:
@@ -517,6 +518,7 @@ To recap, we've seen two common and powerful applications of closures:
 
 - Passing arguments implicitly.
 - At function declaration, storing a snapshot of scope.
+- Reusability as explained above in buttons example
 
 ##### Garage Collection
 
@@ -723,13 +725,10 @@ At this point, we've seen `this` in many different contexts, such as within a me
 
 There are four ways to call functions, and each way sets `this` differently.
 
-First, calling a constructor function with the new keyword sets `this` to a newly-created object. Recall that creating an instance of `Cat` earlier had set `this` to the new `bailey` object.
-
-On the other hand, calling a function that belongs to an object (i.e., a method) sets `this` to the object itself. Recall that earlier, the `dog` object's `barkTwice()` method was able to access properties of `dog` itself.
-
-Third, calling a function on its own (i.e., simply invoking a regular function) will set `this` to `window`, which is the global object if the host environment is the browser.
-
-The fourth way to call functions allows us to set this ourselves! 
+- First, calling a constructor function with the new keyword sets `this` to a newly-created object. 
+- Calling a function that belongs to an object (i.e., a method) sets `this` to the object itself. Recall that earlier, the `dog` object's `barkTwice()` method was able to access properties of `dog` itself.
+- Calling a function on its own (i.e., simply invoking a regular function) will set `this` to `window`, which is the global object if the host environment is the browser.
+- The fourth way to call functions allows us to set this ourselves! 
 
 > If a constructor function is called with the `new` operator, the value of `this` is set to the newly-created object. If a method is invoked on an object, `this` is set to that object itself. And if a function is simply invoked, `this` is set to the global object: `window`.
 
@@ -737,7 +736,7 @@ The fourth way to call functions allows us to set this ourselves!
 
 #### Setting our own `this`
 
-Recall that functions, objects, and `the` this keyword are all interconnected. Whether you're invoking a constructor function with the `new` operator, invoking a method on an object, or simply invoking a function normally -- each form of invocation sets the value of `this` a bit differently.
+Recall that functions, objects, and the `this` keyword are all interconnected. Whether you're invoking a constructor function with the `new` operator, invoking a method on an object, or simply invoking a function normally -- each form of invocation sets the value of `this` a bit differently.
 
 ##### More Ways to Invoke Functions
 
@@ -863,7 +862,7 @@ However, passing `dog.growOneYear` (a function) as an argument into `invokeTwice
 invokeTwice(dog.growOneYear);
 
 dog.age;
-// 6
+// 5
 ```
 
 > `invokeTwice()` does indeed invoke `growOneYear` -- but it is invoked as a **function** rather than a **method**
@@ -1298,3 +1297,82 @@ console.log(rabbit.earBones);
 
 ### MISC
 - prototype chain
+
+## Remember
+- use cases of Closures
+  - Passing arguments implicitly
+  - storing a snapshot of scope
+  - reusability of code
+- use cases of IIFE
+  - One of the primary uses for IIFE's is to create private scope (i.e., private state)
+- subtle working of instanceof 
+  - instanceof confirms that a specific constructor function did in fact create a specific object. Many times, however, it's a bit more complex: the instanceof operator actually tests whether or not that constructor appears in the prototype chain of an object. This means that we can't always check exactly which constructor created that object, but it does give us insight as to what other properties and methods an object may have access to.
+- `this` misconception
+  - A common misconception is that this refers to the object where it is defined. This is not the case!
+  - If a constructor function is called with the `new` operator, the value of `this` is set to the newly-created object. If a method is invoked on an object, `this` is set to that object itself. And if a function is simply invoked, `this` is set to the global object: `window`
+- more ways to call fucntion
+  - `call()`
+
+```js
+call()
+call(thisArg)
+call(thisArg, arg1)
+call(thisArg, arg1, arg2)
+call(thisArg, arg1, ... , argN)
+
+// thisArg: The value to use as this when calling func.
+// argX: Arguments for the function.
+```
+
+  - `apply()`
+    - just as call but rather than passing arguments one-by-one, separated by commas -- `apply()` takes the function's arguments in an array.
+- `call()` vs `apply()`
+  - `call()` may be limited if you don't know ahead of time the number of arguments that the function needs. In this case, `apply()` would be a better option, since it simply takes an array of arguments, then unpacks them to pass along to the function. Keep in mind that the unpacking comes at a minor performance cost, but it shouldn't be much of an issue
+- need for `bind`
+
+```js
+function invokeTwice(cb) {
+   cb();
+   cb();
+}
+
+const dog = {
+  age: 5,
+  growOneYear: function () {
+    this.age += 1;
+  }
+};
+```
+
+
+```js
+invokeTwice(dog.growOneYear);
+
+dog.age;
+// 5
+```
+
+**invokeTwice()** does indeed invoke **growOneYear** -- but it is invoked as a function rather than a method.
+simply invoking a normal function will set the value of this to the global object (i.e., `window`). This is an issue, because we want this to be the dog object!
+
+> One way to resolve this issue is to use an anonymous closure to close over the dog object
+
+```js
+invokeTwice(function () { 
+  dog.growOneYear(); 
+});
+
+dog.age;
+// 7
+```
+
+> another way is use `bind`
+
+```js
+const myGrow = dog.growOneYear.bind(dog);
+invokeTwice(myGrow);
+console.log(dog.age)
+// 7
+```
+
+- 
