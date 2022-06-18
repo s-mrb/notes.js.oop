@@ -1375,4 +1375,50 @@ console.log(dog.age)
 // 7
 ```
 
-- 
+- Protypical Inheritance
+  - Every object is made via any specific constructor function, every constructor function can have a prototype of its own (prototype is just scope/namespace), object made via a specific constructor can use that constructor functions prototype stuff.
+
+
+```js
+function Cat(name) {
+ this.lives = 9;
+ this.name = name;
+
+ this.sayName = function () {
+   console.log(`Meow! My name is ${this.name}`);
+ };
+}
+```
+
+This way, a `sayName` method gets added to all `Cat` objects by saving a function to the `sayName` attribute of newly-created `Cat` objects.
+
+This works just fine, but what if we want to instantiate more and more `Cat` objects with this constructor? You'll create a new function every single time for that `Cat` object's `sayName`! What's more: if you ever want to make changes to the method, you'll have to update all objects individually. In this situation, it makes sense to have all objects created by the same `Cat` constructor function just share a single `sayName` method.
+
+
+To **save memory** and keep things DRY, we can add methods to the constructor function's `prototype` property. The prototype is just an object, and all objects created by a constructor function keep a reference to the `prototype`. Those objects can even use the prototype's properties as their own!
+
+```js
+function Cat(name) {
+ this.lives = 9;
+ this.name = name;
+}
+
+Cat.prototype.sayName = function () {
+   console.log(`Meow! My name is ${this.name}`);
+ };
+
+```
+
+- prototype chain
+  - `prototype` property just points to a regular object, that object itself also has a secret link to its prototype. And that prototype object also has reference to its own prototype -- and so on. This is how the **prototype chain** is formed.
+- What happens if you completely replace a function's prototype object? How does this affect objects created by that function?
+- Use case of
+  - `hasOwnProperty()`
+  - `isPrototypeOf()`
+  - `Object.getPrototypeOf()
+- `constructor` property of
+  - object created usign `new`
+  - object created using `literals`
+
+# LEFT
+- Prototypical Inheritance Subclass
