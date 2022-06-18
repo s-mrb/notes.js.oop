@@ -66,6 +66,7 @@
   - [OOP Summary](#oop-summary)
   - [MISC](#misc)
 - [Remember](#remember)
+- [LEFT](#left)
 
 ## OOP
 
@@ -1420,5 +1421,6 @@ Cat.prototype.sayName = function () {
   - object created usign `new`
   - object created using `literals`
 
-# LEFT
+
+## LEFT
 - Prototypical Inheritance Subclass
